@@ -44,7 +44,7 @@ fn compute_folding_ranges(document: &TextDocumentItem) -> Vec<FoldingRange> {
                             start_character: None,
                             end_line: end_line as u32,
                             end_character: None,
-                            kind: None,
+                            kind: None, // CSS blocks have no specific kind
                             collapsed_text: None,
                         });
                     }
@@ -134,7 +134,7 @@ fn compute_folding_ranges(document: &TextDocumentItem) -> Vec<FoldingRange> {
                 start_character: None,
                 end_line: total_lines,
                 end_character: None,
-                kind: None,
+                kind: None, // CSS blocks have no specific kind
                 collapsed_text: None,
             });
         }
@@ -176,7 +176,7 @@ impl LanguageService {
     ///
     /// # Arguments
     ///
-    /// * `source` - The original CSS source code as a string slice.
+    /// * `document` - The original CSS source code as a `TextDocumentItem`.
     ///
     /// # Returns
     ///
@@ -809,62 +809,80 @@ mod tests {
         assert_eq!(range.end_line, 3, "Body block should end at line 3");
         assert_eq!(range.kind, None, "Body block should have no specific kind");
     }
-    #[test]
-    fn test_compute_folding_ranges_nested_regions() {
-        // Create a CSS document with nested #region markers
-        let document = TextDocumentItem::new(
-        Uri::from_str("file:///test_nested_regions.css").unwrap(),
-        "css".to_string(),
-        1,
-        "/* #region Outer Region */\nbody {\n    /* #region Inner Region */\n    margin: 0;\n    /* #endregion */\n}\n/* #endregion */\n".to_string(),
-    );
 
-        // Compute folding ranges
-        let folding_ranges = compute_folding_ranges(&document);
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        use lsp_types::{FoldingRangeKind, Uri};
+        use std::str::FromStr;
 
-        // Expecting two folding ranges: Outer and Inner regions
-        assert_eq!(
-            folding_ranges.len(),
-            2,
-            "Expected two folding ranges for nested regions"
-        );
+        #[test]
+        fn test_compute_folding_ranges_nested_regions() {
+            // Create a CSS document with nested #region markers
+            let document = TextDocumentItem::new(
+                Uri::from_str("file:///test_nested_regions.css").unwrap(),
+                "css".to_string(),
+                1,
+                "/* #region Outer Region */\nbody {\n    /* #region Inner Region */\n    margin: 0;\n    /* #endregion */\n}\n/* #endregion */\n".to_string(),
+            );
 
-        // Sort folding ranges by start_line
-        let mut sorted_ranges = folding_ranges.clone();
-        sorted_ranges.sort_by_key(|fr| fr.start_line);
+            // Compute folding ranges
+            let folding_ranges = compute_folding_ranges(&document);
 
-        // Verify Outer region
-        let outer_region = &sorted_ranges[0];
-        assert_eq!(
-            outer_region.start_line, 0,
-            "Outer region should start at line 0"
-        );
-        assert_eq!(
-            outer_region.end_line, 6,
-            "Outer region should end at line 6"
-        );
-        assert_eq!(
-            outer_region.kind,
-            Some(FoldingRangeKind::Region),
-            "Outer region should have kind 'region'"
-        );
+            // Expecting three folding ranges: two for regions and one for CSS block
+            assert_eq!(
+                folding_ranges.len(),
+                3,
+                "Expected three folding ranges: two for regions and one for CSS block"
+            );
 
-        // Verify Inner region
-        let inner_region = &sorted_ranges[1];
-        assert_eq!(
-            inner_region.start_line, 2,
-            "Inner region should start at line 2"
-        );
-        assert_eq!(
-            inner_region.end_line, 4,
-            "Inner region should end at line 4"
-        );
-        assert_eq!(
-            inner_region.kind,
-            Some(FoldingRangeKind::Region),
-            "Inner region should have kind 'region'"
-        );
+            // Sort folding ranges by start_line to ensure consistent order
+            let mut sorted_ranges = folding_ranges.clone();
+            sorted_ranges.sort_by_key(|fr| fr.start_line);
+
+            // Verify Outer region
+            let outer_region = &sorted_ranges[0];
+            assert_eq!(
+                outer_region.start_line, 0,
+                "Outer region should start at line 0"
+            );
+            assert_eq!(
+                outer_region.end_line, 6,
+                "Outer region should end at line 6"
+            );
+            assert_eq!(
+                outer_region.kind,
+                Some(FoldingRangeKind::Region),
+                "Outer region should have kind 'Region'"
+            );
+
+            // Verify CSS block
+            let css_block = &sorted_ranges[1];
+            assert_eq!(css_block.start_line, 1, "CSS block should start at line 1");
+            assert_eq!(css_block.end_line, 5, "CSS block should end at line 5");
+            assert_eq!(
+                css_block.kind, None,
+                "CSS block should have no specific kind"
+            );
+
+            // Verify Inner region
+            let inner_region = &sorted_ranges[2];
+            assert_eq!(
+                inner_region.start_line, 2,
+                "Inner region should start at line 2"
+            );
+            assert_eq!(
+                inner_region.end_line, 4,
+                "Inner region should end at line 4"
+            );
+            assert_eq!(
+                inner_region.kind,
+                Some(FoldingRangeKind::Region),
+                "Inner region should have kind 'Region'"
+            );
+        }
     }
+
     #[test]
     fn test_compute_folding_ranges_comments_with_mixed_content() {
         // Create a CSS document with comments that include both region markers and regular content
