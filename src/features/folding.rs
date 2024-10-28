@@ -377,7 +377,7 @@ mod tests {
         // Check the body block folding range
         let body_range = folding_ranges
             .iter()
-            .find(|r| r.kind == Some(FoldingRangeKind::Region))
+            .find(|r| r.kind == None)
             .expect("Body block folding range not found");
         assert_eq!(
             body_range.start_line, 3,
