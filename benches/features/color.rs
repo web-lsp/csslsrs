@@ -1,4 +1,4 @@
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, Criterion};
 use csslsrs::service::LanguageService;
 use lsp_types::{TextDocumentItem, Uri};
 use std::{hint::black_box, str::FromStr};
