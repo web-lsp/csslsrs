@@ -198,7 +198,7 @@ mod wasm_bindings {
  * Get the folding ranges for the given CSS source code. It supports CSS blocks enclosed in
  * braces, multi-line comments, and regions marked with `#region` and `#endregion` comments.
  * 
- * @param source The CSS source code as a string.
+ * @param source The CSS source code as a `TextDocument`.
  * @returns A list of `FoldingRange` objects indicating the foldable regions in the CSS code.
  */
 export async function get_folding_ranges(source: import("vscode-languageserver-textdocument").TextDocument): Promise<import("vscode-languageserver-types").FoldingRange[]>;
