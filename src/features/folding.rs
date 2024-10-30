@@ -167,7 +167,7 @@ fn compute_folding_ranges(document: &TextDocumentItem) -> Vec<FoldingRange> {
             });
         }
     }
-
+    print!("Folded ranges: {:?}", folding_ranges);
     folding_ranges
 }
 

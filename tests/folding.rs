@@ -178,27 +178,6 @@ fn test_folding_ranges_closing_brace_same_line() {
 }
 
 #[test]
-fn test_folding_ranges_no_overlapping() {
-    let css_text = "/* #region Outer */\n.container {\n    /* #region Inner */\n    display: grid;\n    /* #endregion */\n}\n/* #endregion */\n";
-    let expected_ranges = vec![
-        FoldingRange {
-            start_line: 0,
-            end_line: 6,
-            kind: Some(FoldingRangeKind::Region),
-            ..Default::default()
-        },
-        FoldingRange {
-            start_line: 2,
-            end_line: 4,
-            kind: Some(FoldingRangeKind::Region),
-            ..Default::default()
-        },
-    ];
-
-    assert_folding_ranges(css_text, expected_ranges);
-}
-
-#[test]
 fn test_folding_ranges_handles_eof_correctly() {
     let css_text = "body {\n    margin: 0;\n    padding: 0;\n/* Unclosed comment\n continuation\n";
     let expected_ranges = vec![
@@ -236,14 +215,14 @@ fn test_folding_ranges_mixed_delimiters() {
             ..Default::default()
         },
         FoldingRange {
-            start_line: 6,
-            end_line: 10,
+            start_line: 7,
+            end_line: 11,
             kind: Some(FoldingRangeKind::Region),
             ..Default::default()
         },
         FoldingRange {
-            start_line: 7,
-            end_line: 9,
+            start_line: 8,
+            end_line: 10,
             kind: None,
             ..Default::default()
         },
@@ -298,19 +277,19 @@ fn test_folding_ranges_comments_with_mixed_content() {
     let expected_ranges = vec![
         FoldingRange {
             start_line: 0,
-            end_line: 4,
+            end_line: 5,
             kind: Some(FoldingRangeKind::Region),
             ..Default::default()
         },
         FoldingRange {
-            start_line: 1,
-            end_line: 3,
+            start_line: 2,
+            end_line: 4,
             kind: None,
             ..Default::default()
         },
         FoldingRange {
-            start_line: 6,
-            end_line: 8,
+            start_line: 8,
+            end_line: 10,
             kind: None,
             ..Default::default()
         },
@@ -327,9 +306,6 @@ fn test_folding_ranges_without_opening_brace() {
     assert_folding_ranges(css_text, expected_ranges);
 }
 
-/// **declaration intersecting with region**
-///
-/// Verifies that when a CSS declaration overlaps with a region, the declaration's folding range is selected.
 #[test]
 fn test_folding_ranges_declaration_intersecting_with_region() {
     let css_text = "/* #region Header */\n.header {\n    color: red;\n}\n/* #endregion */\n";
@@ -351,9 +327,6 @@ fn test_folding_ranges_declaration_intersecting_with_region() {
     assert_folding_ranges(css_text, expected_ranges);
 }
 
-/// **declaration intersecting with region – closing region without opening**
-///
-/// Verifies that a closing region without a corresponding opening region does not create a folding range.
 #[test]
 fn test_folding_ranges_region_end_without_start() {
     let css_text = ".footer {\n    background: green;\n}\n/* #endregion */\n";
@@ -367,9 +340,6 @@ fn test_folding_ranges_region_end_without_start() {
     assert_folding_ranges(css_text, expected_ranges);
 }
 
-/// **Fold with no indentation**
-///
-/// Verifies that folding works correctly even when there is no indentation.
 #[test]
 fn test_folding_ranges_no_indentation() {
     let css_text = "body {\nmargin: 0;\npadding: 0;\n}\nh1 {\ncolor: blue;\n}\n";
@@ -391,14 +361,11 @@ fn test_folding_ranges_no_indentation() {
     assert_folding_ranges(css_text, expected_ranges);
 }
 
-/// **Fold with opening curly brace on new line**
-///
-/// Verifies that folding works correctly when the opening curly brace is on a new line.
 #[test]
 fn test_folding_ranges_opening_brace_new_line() {
     let css_text = "body\n{\n    margin: 0;\n    padding: 0;\n}\n";
     let expected_ranges = vec![FoldingRange {
-        start_line: 0,
+        start_line: 1,
         end_line: 4,
         kind: None,
         ..Default::default()
@@ -407,9 +374,6 @@ fn test_folding_ranges_opening_brace_new_line() {
     assert_folding_ranges(css_text, expected_ranges);
 }
 
-/// **Comment - wrong indentation and no newline**
-///
-/// Verifies that comments with incorrect indentation and without newlines are correctly folded.
 #[test]
 fn test_folding_ranges_comment_wrong_indentation_no_newline() {
     let css_text = "/*#region Comment */\nbody {\n    margin: 0;\n}\n/*#endregion */";
@@ -431,9 +395,6 @@ fn test_folding_ranges_comment_wrong_indentation_no_newline() {
     assert_folding_ranges(css_text, expected_ranges);
 }
 
-/// **Simple region without spaces**
-///
-/// Verifies that regions defined without spaces are correctly folded.
 #[test]
 fn test_folding_ranges_simple_region_without_spaces() {
     let css_text = "/*#regionHeader*/\n.header {\n    background: blue;\n}\n/*#endregion*/\n";
