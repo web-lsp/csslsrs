@@ -177,6 +177,8 @@ fn test_folding_ranges_closing_brace_same_line() {
     assert_folding_ranges(css_text, expected_ranges);
 }
 
+// When the CSS ends abruptly (EOF) with unclosed comments or blocks, the folding ranges
+// should still be extended to the last line of the document, without panicking.
 #[test]
 fn test_folding_ranges_handles_eof_correctly() {
     let css_text = "body {\n    margin: 0;\n    padding: 0;\n/* Unclosed comment\n continuation\n";
