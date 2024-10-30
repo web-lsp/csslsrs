@@ -194,6 +194,13 @@ mod wasm_bindings {
 
     #[wasm_bindgen(typescript_custom_section)]
     const TS_APPEND_CONTENT: &'static str = r#"
+/**
+ * Get the folding ranges for the given CSS source code. It supports CSS blocks enclosed in
+ * braces, multi-line comments, and regions marked with `#region` and `#endregion` comments.
+ * 
+ * @param source The CSS source code as a string.
+ * @returns A list of `FoldingRange` objects indicating the foldable regions in the CSS code.
+ */
 export async function get_folding_ranges(source: import("vscode-languageserver-textdocument").TextDocument): Promise<import("vscode-languageserver-types").FoldingRange[]>;
 "#;
 
