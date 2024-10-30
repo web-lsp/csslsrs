@@ -54,4 +54,3 @@ fn get_folding_ranges_benchmark(c: &mut Criterion) {
 }
 
 criterion_group!(benches, get_folding_ranges_benchmark);
-criterion_main!(benches);

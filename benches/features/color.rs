@@ -19,4 +19,3 @@ fn get_colors_benchmark(c: &mut Criterion) {
 }
 
 criterion_group!(benches, get_colors_benchmark);
-criterion_main!(benches);
