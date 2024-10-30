@@ -1,3 +1,5 @@
+use std::collections::hash_map::Entry;
+
 use biome_css_parser::CssParse;
 use lsp_types::{TextDocumentItem, Uri};
 use rustc_hash::FxHashMap;
@@ -40,25 +42,28 @@ impl DocumentStore {
     /// Get a document from the store, updating it as well if necessary.
     /// If the document is not in the store, it will be added.
     pub fn get_or_update_document(&mut self, document: TextDocumentItem) -> &StoreEntry {
-        // PERF: Figure out how to do this without cloning the document on updates
-        let store_entry = self
-            .documents
-            .entry(document.uri.clone())
-            .or_insert_with(|| {
-                StoreEntry::new(
-                    document.clone(),
-                    LineIndex::new(&document.text),
-                    parse_css(&document.text),
-                )
-            });
+        let uri = document.uri.clone();
+        let store_entry = self.documents.entry(uri);
 
-        if document.version != store_entry.document.version {
-            store_entry.document = document.clone();
-            store_entry.line_index = LineIndex::new(&document.text);
-            store_entry.css_tree = parse_css(&document.text);
+        match store_entry {
+            Entry::Vacant(entry) => {
+                let line_index = LineIndex::new(&document.text);
+                let css_tree = parse_css(&document.text);
+
+                entry.insert(StoreEntry::new(document, line_index, css_tree))
+            }
+            Entry::Occupied(mut entry) => {
+                let mut_entry = entry.get_mut();
+
+                if document.version != mut_entry.document.version {
+                    mut_entry.document = document;
+                    mut_entry.line_index = LineIndex::new(&mut_entry.document.text);
+                    mut_entry.css_tree = parse_css(&mut_entry.document.text);
+                }
+
+                entry.into_mut()
+            }
         }
-
-        store_entry
     }
 
     pub fn remove(&mut self, uri: &Uri) {
