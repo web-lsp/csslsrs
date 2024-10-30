@@ -45,9 +45,9 @@ fn compute_folding_ranges(
                         as u32;
                     if start_line != end_line {
                         folding_ranges.push(FoldingRange {
-                            start_line: start_line,
+                            start_line,
                             start_character: None,
-                            end_line: end_line,
+                            end_line,
                             end_character: None,
                             kind: None, // CSS blocks have no specific kind
                             collapsed_text: None,
@@ -95,23 +95,21 @@ fn compute_folding_ranges(
                                     folding_ranges.push(FoldingRange {
                                         start_line: region_start,
                                         start_character: None,
-                                        end_line: end_line,
+                                        end_line,
                                         end_character: None,
                                         kind: Some(FoldingRangeKind::Region),
                                         collapsed_text: None,
                                     });
                                 }
-                            } else {
-                                if start_line != end_line {
-                                    folding_ranges.push(FoldingRange {
-                                        start_line: start_line,
-                                        start_character: None,
-                                        end_line: end_line,
-                                        end_character: None,
-                                        kind: Some(FoldingRangeKind::Comment),
-                                        collapsed_text: None,
-                                    });
-                                }
+                            } else if start_line != end_line {
+                                folding_ranges.push(FoldingRange {
+                                    start_line,
+                                    start_character: None,
+                                    end_line,
+                                    end_character: None,
+                                    kind: Some(FoldingRangeKind::Comment),
+                                    collapsed_text: None,
+                                });
                             }
                         }
                     }
@@ -132,7 +130,7 @@ fn compute_folding_ranges(
     while let Some(start_line) = brace_stack.pop() {
         if (start_line as usize) < total_lines as usize {
             folding_ranges.push(FoldingRange {
-                start_line: start_line,
+                start_line,
                 start_character: None,
                 end_line: total_lines,
                 end_character: None,
@@ -146,7 +144,7 @@ fn compute_folding_ranges(
     while let Some(start_line) = comment_stack.pop() {
         if (start_line as usize) < total_lines as usize {
             folding_ranges.push(FoldingRange {
-                start_line: start_line,
+                start_line,
                 start_character: None,
                 end_line: total_lines,
                 end_character: None,
