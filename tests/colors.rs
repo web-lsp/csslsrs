@@ -211,12 +211,93 @@ fn test_functions_color() {
     );
 }
 
+#[test]
+fn test_color_presentations() {
+    let mut ls = LanguageService::default();
+
+    assert_color_presentations(
+        &mut ls,
+        ColorInformation {
+            color: csscolorparser::parse("rgb(255, 0, 0)")
+                .map(convert_parsed_color)
+                .unwrap(),
+            range: Range {
+                start: Position {
+                    line: 0,
+                    character: 0,
+                },
+                end: Position {
+                    line: 0,
+                    character: 0,
+                },
+            },
+        },
+        vec!["rgb(255 0 0)", "#ff0000", "hsl(0 100% 50%)", "hwb(0 0% 0%)"],
+    );
+
+    assert_color_presentations(
+        &mut ls,
+        ColorInformation {
+            color: csscolorparser::parse("rgba(77, 33, 111, 0.5)")
+                .map(convert_parsed_color)
+                .unwrap(),
+            range: Range {
+                start: Position {
+                    line: 0,
+                    character: 0,
+                },
+                end: Position {
+                    line: 0,
+                    character: 0,
+                },
+            },
+        },
+        vec![
+            "rgb(77 33 111 / 50%)",
+            "#4d216f80",
+            "hsl(274 54% 28% / 50%)",
+            "hwb(274 13% 56% / 50%)",
+        ],
+    );
+}
+
 fn convert_parsed_color(color: csscolorparser::Color) -> Color {
     Color {
         red: color.r,
         green: color.g,
         blue: color.b,
         alpha: color.a,
+    }
+}
+
+fn assert_color_presentations(
+    ls: &mut LanguageService,
+    color: ColorInformation,
+    expected_presentations_texts: Vec<&str>,
+) {
+    let range = color.range;
+    let presentations = ls.get_color_presentations(color, range);
+
+    assert_eq!(
+        presentations.len(),
+        expected_presentations_texts.len(),
+        "Unexpected number of color presentations"
+    );
+
+    for (presentation, expected_text) in presentations
+        .iter()
+        .zip(expected_presentations_texts.iter())
+    {
+        assert_eq!(
+            presentation.label, *expected_text,
+            "Unexpected color presentation text"
+        );
+        assert_eq!(
+            presentation.text_edit.as_ref().unwrap().new_text,
+            *expected_text,
+            "Unexpected color presentation text edit"
+        );
+        assert!(presentation.text_edit.as_ref().unwrap().range == range);
     }
 }
 
