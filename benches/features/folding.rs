@@ -41,15 +41,15 @@ h4 {
 fn get_folding_ranges_benchmark(c: &mut Criterion) {
     let mut ls = LanguageService::default();
 
-    let document = TextDocumentItem {
-        uri: Uri::from_str("file:///test.css").unwrap(),
-        language_id: "css".to_string(),
-        version: 0,
-        text: TEST_CASE.to_string(),
-    };
-
     c.bench_function("get_folding_ranges", |b| {
-        b.iter(|| ls.get_folding_ranges(black_box(document.clone())))
+        b.iter(|| {
+            ls.get_folding_ranges(black_box(TextDocumentItem {
+                uri: Uri::from_str("file:///test.css").unwrap(),
+                language_id: "css".to_string(),
+                version: 0,
+                text: TEST_CASE.to_string(),
+            }))
+        })
     });
 }
 
