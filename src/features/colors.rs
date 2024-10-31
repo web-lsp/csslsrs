@@ -2,7 +2,7 @@ use biome_css_parser::CssParse;
 use biome_css_syntax::{CssLanguage, CssSyntaxKind};
 use biome_rowan::{AstNode, SyntaxNode};
 use csscolorparser::{parse as parse_color, NAMED_COLORS};
-use lsp_types::{Color, ColorInformation, ColorPresentation, Range, TextDocumentItem};
+use lsp_types::{Color, ColorInformation, ColorPresentation, Range, TextDocumentItem, TextEdit};
 
 use crate::{
     converters::{line_index::LineIndex, to_proto::range, PositionEncoding},
@@ -99,6 +99,83 @@ fn find_document_colors(
     extract_colors_information(binding.syntax(), line_index, encoding)
 }
 
+fn compute_color_presentations(color: ColorInformation, range: Range) -> Vec<ColorPresentation> {
+    let parsed_color = csscolorparser::Color::from_rgba8(
+        (color.color.red * 255.0).round() as u8,
+        (color.color.green * 255.0).round() as u8,
+        (color.color.blue * 255.0).round() as u8,
+        (color.color.alpha * 255.0).round() as u8,
+    );
+
+    let rgb_color = parsed_color.to_rgba8();
+    let rgb_string = if parsed_color.a == 1.0 {
+        format!("rgb({} {} {})", rgb_color[0], rgb_color[1], rgb_color[2])
+    } else {
+        format!(
+            "rgb({} {} {} / {}%)",
+            rgb_color[0],
+            rgb_color[1],
+            rgb_color[2],
+            (parsed_color.a * 100.0).round()
+        )
+    };
+
+    let hsl_color = parsed_color.to_hsla();
+    let hsl_string = if hsl_color[3] == 1.0 {
+        format!(
+            "hsl({} {}% {}%)",
+            hsl_color[0].round(),
+            (hsl_color[1] * 100.0).round(),
+            (hsl_color[2] * 100.0).round()
+        )
+    } else {
+        format!(
+            "hsl({} {}% {}% / {}%)",
+            hsl_color[0].round(),
+            (hsl_color[1] * 100.0).round(),
+            (hsl_color[2] * 100.0).round(),
+            (hsl_color[3] * 100.0).round()
+        )
+    };
+
+    let hwb_color = parsed_color.to_hwba();
+    let hwb_string = if hwb_color[3] == 1.0 {
+        format!(
+            "hwb({} {}% {}%)",
+            hwb_color[0].round(),
+            (hwb_color[1] * 100.0).round(),
+            (hwb_color[2] * 100.0).round()
+        )
+    } else {
+        format!(
+            "hwb({} {}% {}% / {}%)",
+            hwb_color[0].round(),
+            (hwb_color[1] * 100.0).round(),
+            (hwb_color[2] * 100.0).round(),
+            (hwb_color[3] * 100.0).round()
+        )
+    };
+
+    let color_texts = vec![
+        rgb_string,
+        parsed_color.to_hex_string(),
+        hsl_string,
+        hwb_string,
+    ];
+
+    color_texts
+        .into_iter()
+        .map(|text| ColorPresentation {
+            label: text.clone(),
+            text_edit: Some(TextEdit {
+                range,
+                new_text: text,
+            }),
+            additional_text_edits: None,
+        })
+        .collect()
+}
+
 impl LanguageService {
     pub fn get_document_colors(&mut self, document: TextDocumentItem) -> Vec<ColorInformation> {
         let store_entry = self.store.get_or_update_document(document);
@@ -111,12 +188,11 @@ impl LanguageService {
     }
 
     pub fn get_color_presentations(
-        self,
-        _document: TextDocumentItem,
-        _color: ColorInformation,
-        _range: Range,
+        &self,
+        color: ColorInformation,
+        range: Range,
     ) -> Vec<ColorPresentation> {
-        todo!("Implement get_color_presentations in colors.rs");
+        compute_color_presentations(color, range)
     }
 }
 
@@ -127,7 +203,7 @@ mod wasm_bindings {
         parser::parse_css,
     };
 
-    use super::find_document_colors;
+    use super::{compute_color_presentations, find_document_colors};
     use serde_wasm_bindgen;
     use wasm_bindgen::prelude::*;
 
@@ -147,14 +223,14 @@ mod wasm_bindings {
     }
 
     #[wasm_bindgen(typescript_custom_section)]
-    const TS_APPEND_CONTENT: &'static str = r#"export async function get_color_presentations(source: import("vscode-languageserver-textdocument").TextDocument, color: import("vscode-languageserver-types").ColorInformation, range: import("vscode-languageserver-types").Range): Promise<import("vscode-languageserver-types").ColorPresentation[]>;"#;
+    const TS_APPEND_CONTENT: &'static str = r#"export async function get_color_presentations(color: import("vscode-languageserver-types").ColorInformation, range: import("vscode-languageserver-types").Range): Promise<import("vscode-languageserver-types").ColorPresentation[]>;"#;
 
     #[wasm_bindgen(skip_typescript)]
-    pub fn get_color_presentations(
-        _document: JsValue,
-        _color: JsValue,
-        _range: JsValue,
-    ) -> JsValue {
-        todo!("Implement get_color_presentations in colors/wasm_bindings.rs");
+    pub fn get_color_presentations(color: JsValue, range: JsValue) -> JsValue {
+        let color = serde_wasm_bindgen::from_value(color).unwrap();
+        let range = serde_wasm_bindgen::from_value(range).unwrap();
+        let color_presentations = compute_color_presentations(color, range);
+
+        serde_wasm_bindgen::to_value(&color_presentations).unwrap()
     }
 }
