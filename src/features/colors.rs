@@ -226,13 +226,9 @@ mod wasm_bindings {
     const TS_APPEND_CONTENT: &'static str = r#"export async function get_color_presentations(color: import("vscode-languageserver-types").ColorInformation, range: import("vscode-languageserver-types").Range): Promise<import("vscode-languageserver-types").ColorPresentation[]>;"#;
 
     #[wasm_bindgen(skip_typescript)]
-    pub fn get_color_presentations(
-        _document: JsValue,
-        _color: JsValue,
-        _range: JsValue,
-    ) -> JsValue {
-        let color = serde_wasm_bindgen::from_value(_color).unwrap();
-        let range = serde_wasm_bindgen::from_value(_range).unwrap();
+    pub fn get_color_presentations(color: JsValue, range: JsValue) -> JsValue {
+        let color = serde_wasm_bindgen::from_value(color).unwrap();
+        let range = serde_wasm_bindgen::from_value(range).unwrap();
         let color_presentations = compute_color_presentations(color, range);
 
         serde_wasm_bindgen::to_value(&color_presentations).unwrap()
